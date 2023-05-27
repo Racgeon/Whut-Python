@@ -2,52 +2,18 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 from matplotlib import pyplot as plt
+import seaborn as sns
 from wordcloud import STOPWORDS, WordCloud
 from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
 
 
 # 环境和参数的配置
-def prepare_profile():
-    mpl.rcParams['figure.figsize'] = (12, 6)  # 修改图片大小
-    plt.rcParams['figure.dpi'] = 150
-    plt.rcParams['font.sans-serif'] = ['STXIHEI']
-    plt.rcParams['axes.unicode_minus'] = False
-
-
-# 全球用户每年的各项数据的分析与可视化
-def global_internet_users_analysis():
-    # 全球每年的互联网用户总数分析与可视化：
-    plt.subplots_adjust(hspace=0.5)
-    plt.subplot(2, 2, 1)
-    year_groups = global_users.groupby('Year')
-    internet_users_groups = year_groups['No. of Internet Users']
-    internet_users_sum = internet_users_groups.sum()
-    plt.title('全球每年互联网用户总数')
-    plt.xlabel('年份')
-    plt.ylabel('全球每年互联网用户总数')
-    plt.bar(internet_users_sum.index, internet_users_sum.values, color='cornflowerblue', width=0.6)
-    plt.plot(internet_users_sum, label='No. of Internet Users', lw=3, color='cornflowerblue')
-
-    # 全球每年每100人移动端互联网订阅数、互联网使用人数比例、每100人宽带订阅数的平均值分析与可视化：
-    year_groups = global_users.groupby('Year')
-    title_mapper = {'Cellular Subscription': '全球每年每100人移动端互联网订阅数',
-                    'Internet Users(%)': '全球每年互联网使用人数比例',
-                    'Broadband Subscription': '全球每年每100人宽带订阅数的平均值'}
-    i = 2
-    for column in ['Cellular Subscription', 'Internet Users(%)', 'Broadband Subscription']:
-        plt.subplot(2, 2, i)
-        i += 1
-        internet_users_groups = year_groups[column]
-        internet_users_sum = internet_users_groups.mean()
-        column_max = internet_users_groups.max()
-        plt.title(title_mapper[column])
-        plt.xlabel('年份')
-        plt.ylabel(title_mapper[column])
-        plt.plot(column_max, label=column + ' max', lw=2, linestyle=(0, (5, 1)))
-        plt.plot(internet_users_sum, label=column + ' mean', lw=3, linestyle=(0, (1, 1)))
-        plt.legend(loc='upper right')
-    plt.show()
+def set_properties(context='talk',font_scale=0.8):
+    sns.set_theme(context=context, font='STXIHEI', font_scale=font_scale,
+                  rc={'axes.unicode_minus': False,
+                      'figure.figsize': (12, 8),
+                      'figure.dpi': 150})
 
 
 # 获取2020年国家地区数据封装成的DataFrame
@@ -60,6 +26,46 @@ def get_2020_entities_dataframe():
         entity_2020 = entity_df[entity_df['Year'] == 2020]
         entity_2020_df = pd.concat([entity_2020_df, entity_2020], join='outer', axis=0)
     return entity_2020_df.set_index('Entity')
+
+
+# 全球用户每年的各项数据的分析与可视化
+def global_internet_users_analysis():
+    set_properties()
+    # 全球每年的互联网用户总数分析与可视化：
+    plt.subplots_adjust(hspace=1, wspace=0.7)
+    year_groups = global_users.groupby('Year')
+    internet_users_groups = year_groups['No. of Internet Users']
+    column_mean = internet_users_groups.sum()
+    internet_users_sum_data = pd.DataFrame({'Year': column_mean.index,
+                                            'sum': column_mean.values})
+    plt.subplot(2, 2, 1)
+    plt.title('全球每年互联网用户总数')
+    plt.xlabel('年份')
+    plt.ylabel('全球每年互联网用户总数')
+    sns.lineplot(data=internet_users_sum_data, x='Year', y='sum')
+    plt.bar(column_mean.index, column_mean.values, color='cornflowerblue', width=0.6)
+
+    # 全球每年每100人移动端互联网订阅数、互联网使用人数比例、每100人宽带订阅数的平均值分析与可视化：
+    year_groups = global_users.groupby('Year')
+    title_mapper = {'Cellular Subscription': '全球每年每100人移动互联网订阅数',
+                    'Internet Users(%)': '全球每年互联网使用人数比例',
+                    'Broadband Subscription': '全球每年每100人宽带订阅数平均值'}
+    i = 2
+    for column in ['Cellular Subscription', 'Internet Users(%)', 'Broadband Subscription']:
+        plt.subplot(2, 2, i)
+        i += 1
+        internet_users_groups = year_groups[column]
+        column_mean = internet_users_groups.mean()
+        column_max = internet_users_groups.max()
+        max_data = pd.DataFrame({'Year': column_max.index, 'max': column_max.values})
+        mean_data = pd.DataFrame({'Year': column_mean.index, 'mean': column_mean.values})
+        plt.title(title_mapper[column])
+        plt.xlabel('年份')
+        plt.ylabel(title_mapper[column])
+        sns.lineplot(data=max_data, x='Year', y='max', label=column + ' max', lw=2, linestyle=(0, (5, 1)))
+        sns.lineplot(data=mean_data, x='Year', y='mean', label=column + ' mean', lw=3, linestyle=(0, (1, 1)))
+        plt.legend(loc='upper left', prop={'size': 8.5})
+    plt.show()
 
 
 # 2020年各个国家地区的用户占比饼图绘制
@@ -75,54 +81,53 @@ def entities_2020_internet_users_percentage_pie():
     processed_data = pd.concat([entity_2020_df.head(10), other_df], axis=0, join='outer')
 
     # 绘制饼图
+    set_properties(context='notebook',font_scale=0.8)
     explode_arr = np.zeros(shape=(11))
     explode_arr[0] = 0.07
     plt.axes(aspect=1)
     plt.title('2020年各个国家地区的互联网用户占比')
     plt.pie(processed_data['No. of Internet Users'], labels=processed_data.index, explode=explode_arr,
             labeldistance=1.1, autopct='%2.1f%%', pctdistance=0.9, shadow=True)
-    plt.legend(loc='lower right', bbox_to_anchor=(0.5, 0., 1.0, 0.5), ncols=2)
+    plt.legend(loc='lower right', bbox_to_anchor=(0.5, 0., 0.95, 0.5), ncols=2)
     plt.show()
 
     # 绘制柱状图
-    bar_dict = dict(zip(processed_data.index, processed_data['No. of Internet Users']))
+    set_properties()
+    data = pd.DataFrame({'Entity': processed_data.index, 'Percent': processed_data['No. of Internet Users']})
     plt.title('2020年各个国家地区的互联网用户占比')
-    plt.bar(bar_dict.keys(), bar_dict.values(), color='blue')
+    sns.barplot(data=data, x='Entity', y='Percent')
     plt.show()
 
 
 # 2020年各国家地区互联网用户占比分布直方图
 def entities_2020_internet_users_percentage_distribution_histogram():
+    set_properties(font_scale=0.8)
     entity_2020_df = get_2020_entities_dataframe()
     internet_users_percentage_sr = entity_2020_df['Internet Users(%)']
     plt.title('2020年各国家地区互联网用户占比分布直方图')
     plt.xlabel('互联网用户占比占比')
     plt.ylabel('国家地区数量')
-    plt.grid()
-    plt.hist(internet_users_percentage_sr, color='green', rwidth=0.6, alpha=0.75)
+    data = pd.DataFrame({'Entity': internet_users_percentage_sr.index, 'Percent': internet_users_percentage_sr.values})
+    sns.histplot(data, x='Percent')
     plt.show()
 
 
 # 2020年个国家地区互联网用户占比和移动互联网订阅量的散点图
 def entities_2020_internet_users_percentage_distribution_scatter():
+    set_properties()
     entity_2020_df = get_2020_entities_dataframe()
-    internet_users_percentage_sr = entity_2020_df['Internet Users(%)']
-    cellular_subscription_sr = entity_2020_df['Cellular Subscription']
     plt.title('2020年个国家地区互联网用户占比和移动互联网订阅量散点图')
     plt.xlabel('互联网用户占比占比')
     plt.ylabel('移动互联网订阅量')
-    plt.grid()
-    plt.scatter(internet_users_percentage_sr, cellular_subscription_sr, color='blue')
-    # plt.show()
+    sns.scatterplot(data=entity_2020_df, x='Internet Users(%)', y='Cellular Subscription',
+                    palette='husl', hue='Entity', legend=None)
 
     # 利用线性回归分析两者关系
-    poly_reg = PolynomialFeatures(degree=2)
     x = entity_2020_df[['Internet Users(%)']]
-    x_m = poly_reg.fit_transform(x)
-
-    model_2 = linear_model.LinearRegression()
-    model_2.fit(x_m, entity_2020_df[['Cellular Subscription']])
-    plt.plot(x, model_2.predict(x_m))
+    model_1 = linear_model.LinearRegression()
+    model_1.fit(x, entity_2020_df[['Cellular Subscription']])
+    data = pd.DataFrame({'x': x['Internet Users(%)'], 'pred_y': [x[0] for x in model_1.predict(x)]})
+    sns.lineplot(data=data, x='x', y='pred_y')
     plt.show()
 
 
@@ -142,6 +147,7 @@ def draw_internet_users_percentage_annual_top_3_wordcloud():
     wc = WordCloud(max_words=100, width=800, height=400, background_color='White',
                    max_font_size=150, stopwords=STOPWORDS, margin=5, scale=1.5)
     wc.generate(text)
+    plt.title('')
     plt.imshow(wc)
     plt.axis("off")
     wc.to_file('wordcloud.png')
@@ -151,58 +157,75 @@ def draw_internet_users_percentage_annual_top_3_wordcloud():
 # 对中国互联网用户数据的分析与可视化
 def chinese_users_analysis():
     # 绘制各项指标的数值图
+    set_properties()
     plt.title('中国互联网用户的数量（单位：千万人）、占人口的比例、移动互联网订阅每一百人比例、宽带每一百人订阅比例')
     plt.xlabel('年份')
     plt.ylabel('数值')
-    plt.plot(chinese_users['Year'], chinese_users['No. of Internet Users'] / 10000000, lw=4, label='数量（单位：千万人）')
-    plt.plot(chinese_users['Year'], chinese_users['Internet Users(%)'], lw=4, label='占人口的比例')
-    plt.plot(chinese_users['Year'], chinese_users['Cellular Subscription'], lw=4, label='移动互联网订阅每一百人比例')
-    plt.plot(chinese_users['Year'], chinese_users['Broadband Subscription'], lw=4, label='宽带每一百人订阅比例')
+    chinese_users.loc[:, 'No. of Internet Users'] /= 10000000
+    sns.lineplot(data=chinese_users, x='Year', y='No. of Internet Users', label='数量（单位：千万人）', lw=3)
+    sns.lineplot(data=chinese_users, x='Year', y='Internet Users(%)', label='占人口的比例', lw=3)
+    sns.lineplot(data=chinese_users, x='Year', y='Cellular Subscription', label='移动互联网订阅每一百人比例', lw=3)
+    sns.lineplot(data=chinese_users, x='Year', y='Broadband Subscription', label='宽带每一百人订阅比例', lw=3)
     plt.legend(loc='upper left')
     plt.show()
 
     # 绘制各项指标的增长率图
+    set_properties()
     chinese_users.loc[:, 'increase of No. of Internet Users'] = 0
     chinese_users.loc[:, 'increase of Internet Users(%)'] = 0
     chinese_users.loc[:, 'increase of Cellular Subscription'] = 0
     chinese_users.loc[:, 'increase of Broadband Subscription'] = 0
     rows = len(chinese_users.index)
     for i in range(rows - 1):
-        chinese_users.loc[:,'increase of No. of Internet Users'].iloc[i + 1] = 0 if chinese_users.iloc[i]['No. of Internet Users'] == 0 \
-            else (chinese_users.iloc[i + 1].loc['No. of Internet Users'] - chinese_users.iloc[i]['No. of Internet Users']) / \
+        chinese_users.loc[:, 'increase of No. of Internet Users'].iloc[i + 1] = 0 if chinese_users.iloc[i][
+                                                                                         'No. of Internet Users'] == 0 \
+            else (chinese_users.iloc[i + 1].loc['No. of Internet Users'] - chinese_users.iloc[i][
+            'No. of Internet Users']) / \
                  chinese_users.iloc[i]['No. of Internet Users']
-        chinese_users.loc[:,'increase of Internet Users(%)'].iloc[i + 1] = 0 if chinese_users.iloc[i]['Internet Users(%)'] == 0 \
+        chinese_users.loc[:, 'increase of Internet Users(%)'].iloc[i + 1] = 0 if chinese_users.iloc[i][
+                                                                                     'Internet Users(%)'] == 0 \
             else (chinese_users.iloc[i + 1]['Internet Users(%)'] - chinese_users.iloc[i]['Internet Users(%)']) / \
                  chinese_users.iloc[i]['Internet Users(%)']
-        chinese_users.loc[:,'increase of Cellular Subscription'].iloc[i + 1] = 0 if chinese_users.iloc[i]['Cellular Subscription'] == 0 \
+        chinese_users.loc[:, 'increase of Cellular Subscription'].iloc[i + 1] = 0 if chinese_users.iloc[i][
+                                                                                         'Cellular Subscription'] == 0 \
             else (chinese_users.iloc[i + 1]['Cellular Subscription'] - chinese_users.iloc[i]['Cellular Subscription']) / \
                  chinese_users.iloc[i]['Cellular Subscription']
-        chinese_users.loc[:,'increase of Broadband Subscription'].iloc[i + 1] = 0 if chinese_users.iloc[i]['Broadband Subscription'] == 0 \
-            else (chinese_users.iloc[i + 1]['Broadband Subscription'] - chinese_users.iloc[i]['Broadband Subscription']) / \
+        chinese_users.loc[:, 'increase of Broadband Subscription'].iloc[i + 1] = 0 if chinese_users.iloc[i][
+                                                                                          'Broadband Subscription'] == 0 \
+            else (chinese_users.iloc[i + 1]['Broadband Subscription'] - chinese_users.iloc[i][
+            'Broadband Subscription']) / \
                  chinese_users.iloc[i]['Broadband Subscription']
     plt.title('中国互联网用户的数量（单位：千万人）、占人口的比例、移动互联网订阅每一百人比例、宽带每一百人订阅比例的增长率')
     plt.xlabel('年份')
     plt.ylabel('数值')
-    plt.plot(chinese_users['Year'], chinese_users['increase of No. of Internet Users'] / 10000000, lw=4,
-             label='数量（单位：千万人）增长率')
-    plt.plot(chinese_users['Year'], chinese_users['increase of Internet Users(%)'], lw=4, label='占人口的比例')
-    plt.plot(chinese_users['Year'], chinese_users['increase of Cellular Subscription'], lw=4,
-             label='移动互联网订阅每一百人比例增长率')
-    plt.plot(chinese_users['Year'], chinese_users['increase of Broadband Subscription'], lw=4,
-             label='宽带每一百人订阅比例增长率')
+    sns.lineplot(data=chinese_users, x='Year', y='increase of No. of Internet Users', lw=4,
+                 label='数量（单位：千万人）增长率')
+    sns.lineplot(data=chinese_users, x='Year', y='increase of Internet Users(%)', lw=4, label='占人口的比例')
+    sns.lineplot(data=chinese_users, x='Year', y='increase of Cellular Subscription', lw=4,
+                 label='移动互联网订阅每一百人比例增长率')
+    sns.lineplot(data=chinese_users, x='Year', y='increase of Broadband Subscription', lw=4,
+                 label='宽带每一百人订阅比例增长率')
     plt.legend(loc='upper left')
     plt.show()
 
-    plt.scatter(chinese_users['Year'], chinese_users['No. of Internet Users'])
+    # 利用多元线性回归预测中国互联网到2050年的总用户数
+    # 拟合：
+    set_properties()
+    plt.title('对1980到2020年中国互联网总用户数的拟合')
+    sns.scatterplot(data=chinese_users, x='Year', y='No. of Internet Users')
     poly_reg = PolynomialFeatures(degree=3)
     x = chinese_users[['Year']]
     x_m = poly_reg.fit_transform(x)
 
     model_2 = linear_model.LinearRegression()
     model_2.fit(x_m, chinese_users[['No. of Internet Users']])
-    plt.plot(x, model_2.predict(x_m),color='g')
+    data = pd.DataFrame({'x': x['Year'], 'pred_y': [x[0] for x in model_2.predict(x_m)]})
+    sns.lineplot(data=data, x='x', y='pred_y')
     plt.show()
 
+    # 预测：
+    set_properties()
+    plt.title('到2050年中国互联网总用户数的预测')
     pred_x = pd.DataFrame(np.arange(1980, 2051), columns=['Year'])
     pred_x_m = poly_reg.fit_transform(pred_x)
     plt.plot(pred_x, model_2.predict(pred_x_m))
@@ -210,8 +233,6 @@ def chinese_users_analysis():
 
 
 if __name__ == '__main__':
-    # 准备环境
-    prepare_profile()
     # 读取文件，获取全球互联网用户信息
     global_users = pd.read_csv('data/Final.csv', delimiter=',', usecols=range(1, 8))  # 由于第一列的列名未知，所以不使用第一列
     # 对全球用户进行分析：
