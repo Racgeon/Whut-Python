@@ -64,8 +64,8 @@ def global_internet_users_analysis():
         sns.lineplot(data=max_data, x='Year', y='max', label=column + ' max', lw=2, linestyle=(0, (5, 1)))
         sns.lineplot(data=mean_data, x='Year', y='mean', label=column + ' mean', lw=3, linestyle=(0, (1, 1)))
         plt.legend(loc='upper left', prop={'size': 8.5})
+    plt.savefig('../img/全球用户每年的各项数据的分析与可视化.png')
     plt.show()
-    plt.savefig('../img/global_internet_users_analysis.png')
 
 
 # 2020年各个国家地区的用户占比饼图和柱状图绘制
@@ -140,6 +140,7 @@ def entities_2020_internet_users_percentage_distribution_scatter():
 def draw_internet_users_percentage_annual_top_3_wordcloud():
     text = ''
     year_groups = global_users.groupby('Year')
+    # 获取每一年互联网用户的比例最大的三个国家地区名数据
     for year, year_df in year_groups:
         year_df.sort_values(by='Internet Users(%)', ascending=False, inplace=True)
         top_3 = year_df.head(3)
@@ -147,6 +148,7 @@ def draw_internet_users_percentage_annual_top_3_wordcloud():
         for entity in entities:
             if len(entity.split()) > 1:
                 text += entity.replace(' ', '_') + ' '
+                # 将名字中含有空格的国家地区名中的空格替换成下划线_，避免一个名字被拆分成多个单词
             else:
                 text += entity + ' '
     wc = WordCloud(max_words=100, width=800, height=400, background_color='White',
@@ -215,17 +217,21 @@ def chinese_users_analysis():
     model_2 = linear_model.LinearRegression()
     model_2.fit(x_m, chinese_users[['No. of Internet Users']])
     data = pd.DataFrame({'x': x['Year'], 'pred_y': [x[0] for x in model_2.predict(x_m)]})
+    plt.xlabel('年份')
+    plt.ylabel('人数（单位：千万人）')
     sns.lineplot(data=data, x='x', y='pred_y')
     plt.savefig('../img/对1980到2020年中国互联网总用户数的拟合')
     plt.show()
 
     # 预测：
     set_seaborn_properties()
-    plt.title('到2050年中国互联网总用户数的预测')
-    pred_x = pd.DataFrame(np.arange(1980, 2051), columns=['Year'])
+    plt.title('到2030年中国互联网总用户数的预测')
+    plt.xlabel('年份')
+    plt.ylabel('人数（单位：千万人）')
+    pred_x = pd.DataFrame(np.arange(1980, 2031), columns=['Year'])
     pred_x_m = poly_reg.fit_transform(pred_x)
     plt.plot(pred_x, model_2.predict(pred_x_m))
-    plt.savefig('../img/到2050年中国互联网总用户数的预测')
+    plt.savefig('../img/到2030年中国互联网总用户数的预测')
     plt.show()
 
 
