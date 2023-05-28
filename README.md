@@ -119,7 +119,7 @@ for column in ['Cellular Subscription', 'Internet Users(%)', 'Broadband Subscrip
     sns.lineplot(data=mean_data, x='Year', y='mean', label=column + ' mean', lw=3, linestyle=(0, (1, 1)))
 ``````
 
-![全球用户每年的各项数据的分析与可视化](img全球用户每年的各项数据的分析与可视化.png)
+![全球用户每年的各项数据的分析与可视化](img/全球用户每年的各项数据的分析与可视化.png)
 
 从图中可以看出：
 
